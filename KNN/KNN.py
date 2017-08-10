@@ -8,8 +8,11 @@
 
 from numpy import *
 import operator
+from os import listdir
 
 
+###################################################################################################
+# K-近邻算法实现
 ## 创建数据集
 def createDateSet():
     group = array([[1.0, 1.1], [1.0, 1.0], [0, 0], [0, 0.1]])
@@ -36,6 +39,9 @@ def classify0(inx, dataSet, labels, k):
     sortedClassCount = sorted(classCount.iteritems(), key=operator.itemgetter(1), reverse=True)    # 排序
     return sortedClassCount[0][0]
 
+
+#################################################################################################
+# 示例一、约会网站
 def file2matrix(filename):
     fr = open(filename)
     arrayOLines = fr.readlines()   #按行读取文件
@@ -50,3 +56,88 @@ def file2matrix(filename):
         classLabelVector.append(int(listFromLine[-1]))    #listFromLine[-1]：得到listFromLine数组的最后一个元素，即为label
         index += 1
     return returnMat, classLabelVector
+
+
+### 归一化特征值，归一化结果：数据集范围：数据集最小值
+def autoNorm(dataSet):
+    minVals = dataSet.min(0)     # 参数0使得函数可以从列中选取最小值
+    maxvals = dataSet.max(0)    # 同样是从列中选择最大值
+    ranges = maxvals - minVals
+    normDataSet = zeros(shape(dataSet))    # 创建和dataSet维度大小的0矩阵
+    m = dataSet.shape[0]    # 返回数据集的行数
+    normDataSet = dataSet - tile(minVals, (m, 1))   # 数据集减去每一列的最小值
+    normDataSet = normDataSet/tile(ranges, (m, 1))  # 数据集每个数据除
+    return normDataSet, ranges, minVals
+
+#   分裂期针对约会网站的测试代码
+def datingClassTest():
+    hoRatio = 0.10
+    datingDataMat, datingLabels = file2matrix("./dataset/datingTestSet2.txt")    # 得到数据集和标签
+    normMat, ranges, minVals = autoNorm(datingDataMat)  # 归一化数据集
+    m = normMat.shape[0]
+    numTestVecs = int(m*hoRatio)
+    errorCount = 0
+    for i in range(numTestVecs):
+        classifierResult = classify0(normMat[i, :], normMat[numTestVecs: m, :],
+                                     datingLabels[numTestVecs: m], 3)
+        print "The classfier came back with : %d, the real answer is : %d" % (classifierResult, datingLabels[i])
+        if(classifierResult != datingLabels[i]):
+            errorCount += 1.0
+    print "The total error rate is : %f" % (errorCount / float(numTestVecs))
+
+#   使用算法构建完整的可用系统
+def classifyPerson():
+    resultList = ['not at all', 'in small doses', 'in large doses']
+    percentTats = float(raw_input("percentage of time spent playing vido games?"))
+    ffMiles = float(raw_input("frequent flier miles earned per year?"))
+    iceCream = float(raw_input("liters of ice cream consumed per year?"))
+    datingDataMat, datingLabels = file2matrix("./dataset/datingTestSet2.txt")   # 读取数据
+    normMat, ranges, minVals = autoNorm(datingDataMat)  # 归一化数据
+    inArr = array([ffMiles, percentTats, iceCream])    # 输入的测试数据
+    classifierResult = classify0((inArr - minVals) / ranges, normMat, datingLabels, 3)    # 归一化测试数据
+    print "You will probably like this person:", resultList[classifierResult - 1]
+
+
+#########################################################################################################
+# 示例：手写识别系统
+#########################################################################################################
+
+
+# 函数img2vector()将图像转换为向量
+def img2vector(filename):
+    returnVect = zeros((1, 1024))
+    fr = open(filename)
+    for i in range(32):
+        lineStr = fr.readline()     # 读取一行数据
+        for j in range(32):
+            returnVect[0, 32*i+j] = int(lineStr[j])
+    return returnVect
+
+# 手写数字识别系统的测试代码
+def handwritingClassTest():
+    hwLabels = []
+    trainingFileList = listdir("./dataset/digits/trainingDigits")   # 得到文件列表
+    m = len(trainingFileList)   # 包含文件的个数
+    trainingMat = zeros((m, 1024))
+    for i in range(m):  # 从文件中解析出分类数字和将图像转换为向量
+        fileNameStr = trainingFileList[i]   # 得到文件
+        fileStr = fileNameStr.split('.')[0]
+        classNumStr = int(fileStr.split('_')[0])    # 得到图像类别数字
+        hwLabels.append(classNumStr)
+        trainingMat[i, :] = img2vector("./dataset/digits/trainingDigits/%s" % fileNameStr)
+    testFileList = listdir("./dataset/digits/testDigits")
+    errorCount = 0.0
+    mTest = len(testFileList)
+    for i in range(mTest):
+        fileNameStr = testFileList[i]
+        fileStr = fileNameStr.split(".")[0]
+        classNumStr = int(fileStr.split('_')[0])
+        vectorUnderTest = img2vector("./dataset/digits/testDigits/%s" % fileNameStr)
+        classifierResult = classify0(vectorUnderTest, trainingMat, hwLabels, 3)
+        print "the classifler came back with: %d, the real answer is : %d" % (classifierResult, classNumStr)
+        if(classifierResult != classNumStr):
+            errorCount += 1.0
+    print "\nthe total number of errors is : %d" % errorCount
+    print "\nthe total error rate is: %f" % (errorCount/float(mTest))
+
+

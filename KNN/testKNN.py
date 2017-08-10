@@ -6,8 +6,9 @@
 # @File    : testKNN.py
 # @Software: PyCharm Community Edition
 
-from KNN import createDateSet, classify0, file2matrix
-import matplotlib
+from KNN import createDateSet, classify0, file2matrix, datingClassTest, classifyPerson,\
+img2vector, handwritingClassTest
+import matplotlib as mp
 import matplotlib.pyplot as plt
 from numpy import *
 
@@ -36,8 +37,21 @@ if __name__ == "__main__":
     fig = plt.figure(figsize=(10, 9), facecolor='w')
     ax = fig.add_subplot(111)
     # 使用列2和3展示数据
-    # ax.scatter(datingDataMat[:, 1], datingDataMat[:, 2],
-    #           15.0*array(datingLabels), 15.0*array(datingLabels))
+    ax.scatter(datingDataMat[:, 1], datingDataMat[:, 2],
+               15.0*array(datingLabels), 15.0*array(datingLabels))
     #使用列1和2展示数据
     # ax.scatter(dating)
     plt.show()
+
+    # 对归一化之后的数据进行预测，并输出错误率
+    datingClassTest()
+    # 约会网站预测函数
+    classifyPerson()
+
+    #################################################################
+    # 示例二、使用K-近邻算法识别手写数字
+    testVector = img2vector("./dataset/digits/testDigits/0_13.txt")
+    print "数字图像转向量示例：", testVector
+
+    # 测试代码
+    handwritingClassTest()
